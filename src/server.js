@@ -1,13 +1,30 @@
-import express from 'express';
-import connectDb from './lib/db';
+import express from "express";
+import connectDb from "./lib/db.js";
+import dotenv from "dotenv";
+import taskRoutes from "./routes/taskRoutes.js";
+import teamRoutes from "./routes/teamRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import commentRoutes from "./routes/commentRoute.js";
 
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 app.use(express.json());
 
+app.use("/api/task", taskRoutes);
+app.use("/api/team", teamRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/comment", commentRoutes);
 
-app.listen(port,()=>{
-    console.log("Server is running on port " + port);
-    connectDb();
-})
+app.get("/", (req, res) => {
+  console.log("Test route hit");
+  res.send({ message: "Server is working" });
+});
+
+app.listen(port, () => {
+  console.log("Server is running on port " + port);
+  connectDb();
+});
