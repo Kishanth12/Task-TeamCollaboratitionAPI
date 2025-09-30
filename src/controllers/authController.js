@@ -16,8 +16,8 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      });
-    generateToken(user._id);
+    });
+    generateToken(res,user._id);
     const newUser = await user.save();
     res.status(201).json({
       message: "User registered successfully",
@@ -41,13 +41,24 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
-    generateToken(user._id);
+    generateToken(res,user._id);
     res.status(200).json({
       message: "User logged in successfully",
       user,
     });
   } catch (error) {
     console.log("Error logging in user:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+//logout
+export const logout = async (req, res) => {
+  try {
+    res.cookie("jwt", "", { maxAge: 0 });
+    res.status(200).json({ message: "User logged out successfully" });
+  } catch (error) {
+    console.log("Error logging out user:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
