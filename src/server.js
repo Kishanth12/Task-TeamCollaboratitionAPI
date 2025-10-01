@@ -8,13 +8,13 @@ import authRoutes from "./routes/authRoutes.js";
 import commentRoutes from "./routes/commentRoute.js";
 import cookieParser from "cookie-parser";
 
+import { server,app } from "./lib/socket.js";
+
 dotenv.config();
 
-const app = express();
 const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(cookieParser())
-
 
 app.use("/api/task", taskRoutes);
 app.use("/api/team", teamRoutes);
@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
   res.send({ message: "Server is working" });
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log("Server is running on port " + port);
   connectDb();
 });

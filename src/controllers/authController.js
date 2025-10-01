@@ -17,8 +17,8 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
     });
-    generateToken(res,user._id);
     const newUser = await user.save();
+    generateToken(res, user._id);
     res.status(201).json({
       message: "User registered successfully",
       user: newUser,
@@ -41,7 +41,7 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
-    generateToken(res,user._id);
+    generateToken(res, user._id);
     res.status(200).json({
       message: "User logged in successfully",
       user,

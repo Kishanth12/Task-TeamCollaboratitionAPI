@@ -59,8 +59,11 @@ export const createTeam = async (req, res) => {
 //get all teams
 export const getAllTeams = async (req, res) => {
   try {
-    const teams = await Team.find().populate("employees").populate("manager");
-    if (!teams) {
+    const teams = await Team.find()
+      .populate("employees")
+      .populate("manager")
+      .lean();
+    if (!teams || teams.length === 0) {
       return res.status(404).json({ message: "No teams found" });
     }
     res.status(200).json(teams);
@@ -76,7 +79,8 @@ export const getSingleTeam = async (req, res) => {
     const { id } = req.params;
     const team = await Team.findById(id)
       .populate("employees")
-      .populate("manager");
+      .populate("manager")
+      .lean();
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
@@ -97,6 +101,7 @@ export const deleteTeam = async (req, res) => {
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
+    await User.updateMany({ teams: team._id }, { $pull: { teams: team._id } });
 
     res.status(200).json({ message: "Team deleted successfully" });
   } catch (error) {
@@ -106,56 +111,64 @@ export const deleteTeam = async (req, res) => {
 };
 
 //update team
-// export const updateTeam = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { name, employees = [], manager = [] } = req.body;
-
-//     const team = await Team.findById(id);
-//     if (!team) {
-//       return res.status(404).json({ message: "Team not found" });
-//     }
-//     const validManagers = await User.find({ _id: { $in: manager }, role: "Manager" });
-//     if (validManagers.length !== manager.length) {
-//       return res.status(400).json({ message: "One or more provided managers are invalid" });
-//     }
-//     const validEmployees = await User.find({ _id: { $in: employees }, role: "Employee" });
-//     if (validEmployees.length !== employees.length) {
-//       return res.status(400).json({ message: "One or more provided employees are invalid" });
-//     }
-//     team.name = name || team.name;
-//     team.employees = employees.length ? employees : team.employees;
-//     team.manager = manager.length ? manager : team.manager;
-
-//     const updatedTeam = await team.save();
-
-//     return res.status(200).json({
-//       message: "Team updated successfully",
-//       team: updatedTeam,
-//     });
-
-//   } catch (error) {
-//     console.error("Error updating team:", error);
-//     return res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-//update team
 export const updateTeam = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, employees = [], manager = [] } = req.body;
+
     const team = await Team.findById(id);
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-    team.name = name || team.name;
-    const updatedTeam = await team.save();
-    return res.status(200).json({
-      message: "Team updated successfully",
-      team: updatedTeam,
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    // Validate managers
+    const validManagers = await User.find({
+      _id: { $in: manager },
+      role: "Manager",
     });
+    if (validManagers.length !== manager.length) {
+      return res
+        .status(400)
+        .json({ message: "One or more managers are invalid" });
+    }
+
+    // Validate employees
+    const validEmployees = await User.find({
+      _id: { $in: employees },
+      role: "Employee",
+    });
+    if (validEmployees.length !== employees.length) {
+      return res
+        .status(400)
+        .json({ message: "One or more employees are invalid" });
+    }
+
+    // Update team fields
+    team.name = name || team.name;
+    team.manager = manager.length ? manager : team.manager;
+    team.employees = employees.length ? employees : team.employees;
+    const updatedTeam = await team.save();
+
+    await User.updateMany(
+      { _id: { $nin: manager }, teams: team._id },
+      { $pull: { teams: team._id } }
+    );
+    await User.updateMany(
+      { _id: { $nin: employees }, teams: team._id },
+      { $pull: { teams: team._id } }
+    );
+    await User.updateMany(
+      { _id: { $in: manager } },
+      { $addToSet: { teams: team._id } }
+    );
+    await User.updateMany(
+      { _id: { $in: employees } },
+      { $addToSet: { teams: team._id } }
+    );
+
+    res
+      .status(200)
+      .json({ message: "Team updated successfully", team: updatedTeam });
   } catch (error) {
-    console.log("Error updating team:", error);
+    console.error("Error updating team:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -178,7 +191,8 @@ export const getTeamMembers = async (req, res) => {
       .populate({
         path: "teams",
         select: "name",
-      });
+      })
+      .lean();
     if (!members) {
       return res.status(404).json({ message: "Members not found" });
     }
