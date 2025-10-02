@@ -31,7 +31,7 @@ export const addTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, status, priority, dueDate } = req.body;
+    const { title, description, status, priority, dueDate,teamId } = req.body;
     const task = await Task.findById(id);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -41,6 +41,7 @@ export const updateTask = async (req, res) => {
     task.status = status || task.status;
     task.priority = priority || task.priority;
     task.dueDate = dueDate ? new Date(dueDate) : task.dueDate;
+    task.teamId = teamId || task.teamId;
     const updatedTask = await task.save();
 
     try {
@@ -63,19 +64,27 @@ export const assignTask = async (req, res) => {
   try {
     const user = req.user;
     const { id } = req.params;
-    const { newUserId } = req.body;
+    const { userId } = req.body;
 
     const task = await Task.findById(id);
     if (!task) return res.status(404).json({ message: "Task not found" });
 
-    task.assignedTo = newUserId;
+    const oldUserId = task.assignedTo?.toString();
+    task.assignedTo = userId;
     await task.save();
 
-    await createLog(user._id, task._id, "Task assigned");
+    const action = oldUserId ? "Task reassigned" : "Task assigned";
 
-    res.status(200).json({ message: "Task assigned successfully", task });
+    await createLog(user._id, task._id, action,{oldUserId});
+
+    res.status(200).json({
+      message: `${action} successfully`,
+      task,
+      oldUserId,
+      userId,
+    });
   } catch (error) {
-    console.error("Error in assigning task:", error);
+    console.error("Error in assigning/reassigning task:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

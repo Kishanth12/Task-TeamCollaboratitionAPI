@@ -24,7 +24,10 @@ export const updateUserRole = async (req, res) => {
 //list all users
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("teams");
+    const users = await User.find().populate({
+      path: "teams",
+      select: "name",
+    });
     if (users.length === 0) {
       return res.status(404).json({ message: "No users found" });
     }
@@ -40,7 +43,10 @@ export const getAllUsers = async (req, res) => {
 export const getSingleUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).populate("teams");
+    const user = await User.findById(id).populate({
+      path: "teams",
+      select: "name",
+    });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

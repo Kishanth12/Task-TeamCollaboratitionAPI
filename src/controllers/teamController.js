@@ -5,53 +5,42 @@ import User from "../models/userModel.js";
 export const createTeam = async (req, res) => {
   try {
     const { name, employees = [], manager = [] } = req.body;
-
-    if (!name) {
-      return res.status(400).json({ message: "Team name is required" });
-    }
-    if (!manager || manager.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "At least one manager is required" });
-    }
-    const validateManager = await User.find({
+    const validManagers = await User.find({
       _id: { $in: manager },
       role: "Manager",
     });
-    if (validateManager.length !== manager.length) {
+    if (validManagers.length !== manager.length) {
       return res.status(400).json({ message: "Invalid managers are provided" });
     }
-    const validateEmployee = await User.find({
-      _id: { $in: employees },
-      role: "Employee",
-    });
-    if (validateEmployee.length !== employees.length) {
-      return res
-        .status(400)
-        .json({ message: "Invalid employees are provided" });
-    }
-    const team = new Team({
-      name,
-      employees: employees,
-      manager: manager,
-    });
 
+    if (employees.length) {
+      const validEmployees = await User.find({
+        _id: { $in: employees },
+        role: "Employee",
+      });
+      if (validEmployees.length !== employees.length) {
+        return res
+          .status(400)
+          .json({ message: "Invalid employees are provided" });
+      }
+    }
+    const team = new Team({ name, manager, employees });
     const savedTeam = await team.save();
     await User.updateMany(
       { _id: { $in: manager } },
       { $addToSet: { teams: savedTeam._id } }
     );
-    await User.updateMany(
-      { _id: { $in: employees } },
-      { $addToSet: { teams: savedTeam._id } }
-    );
-
-    res.status(201).json({
-      message: "Team created successfully",
-      team: savedTeam,
-    });
+    if (employees.length) {
+      await User.updateMany(
+        { _id: { $in: employees } },
+        { $addToSet: { teams: savedTeam._id } }
+      );
+    }
+    res
+      .status(201)
+      .json({ message: "Team created successfully", team: savedTeam });
   } catch (error) {
-    console.log("Error creating team:", error);
+    console.error("Error creating team:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -59,10 +48,7 @@ export const createTeam = async (req, res) => {
 //get all teams
 export const getAllTeams = async (req, res) => {
   try {
-    const teams = await Team.find()
-      .populate("employees")
-      .populate("manager")
-      .lean();
+    const teams = await Team.find().select("name")
     if (!teams || teams.length === 0) {
       return res.status(404).json({ message: "No teams found" });
     }
@@ -119,7 +105,6 @@ export const updateTeam = async (req, res) => {
     const team = await Team.findById(id);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // Validate managers
     const validManagers = await User.find({
       _id: { $in: manager },
       role: "Manager",
@@ -129,8 +114,6 @@ export const updateTeam = async (req, res) => {
         .status(400)
         .json({ message: "One or more managers are invalid" });
     }
-
-    // Validate employees
     const validEmployees = await User.find({
       _id: { $in: employees },
       role: "Employee",
@@ -140,8 +123,6 @@ export const updateTeam = async (req, res) => {
         .status(400)
         .json({ message: "One or more employees are invalid" });
     }
-
-    // Update team fields
     team.name = name || team.name;
     team.manager = manager.length ? manager : team.manager;
     team.employees = employees.length ? employees : team.employees;
@@ -173,32 +154,4 @@ export const updateTeam = async (req, res) => {
   }
 };
 
-//get logged Manager team members
-export const getTeamMembers = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const teams = await Team.find({ manager: userId });
-    if (!teams || teams.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No teams found for this manager" });
-    }
-    const members = await User.find({
-      teams: { $in: teams.map((team) => team._id) },
-      _id: { $ne: userId },
-    })
-      .select("-password")
-      .populate({
-        path: "teams",
-        select: "name",
-      })
-      .lean();
-    if (!members) {
-      return res.status(404).json({ message: "Members not found" });
-    }
-    res.status(200).json(members);
-  } catch (error) {
-    console.log("Error fetching team members:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
+

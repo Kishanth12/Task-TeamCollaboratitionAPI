@@ -9,11 +9,12 @@ const idValidator = param("id")
 
 // Create Team
 export const createTeamValidator = [
-  body("name").notEmpty().withMessage("Team name is required"),
+  body("name").notEmpty().bail().withMessage("Team name is required"),
 
   body("manager")
     .isArray({ min: 1 })
     .withMessage("At least one manager is required")
+    .bail()
     .custom((arr) => arr.every(isValidObjectId))
     .withMessage("Invalid manager IDs"),
 
@@ -21,6 +22,7 @@ export const createTeamValidator = [
     .optional()
     .isArray()
     .withMessage("Employees must be an array")
+    .bail()
     .custom((arr) => arr.every(isValidObjectId))
     .withMessage("Invalid employee IDs"),
 ];
@@ -28,12 +30,17 @@ export const createTeamValidator = [
 // Update Team
 export const updateTeamValidator = [
   idValidator,
-  body("name").optional(),
+  body("name")
+    .optional()
+    .notEmpty()
+    .bail()
+    .withMessage("Team name is required"),
 
   body("manager")
     .optional()
     .isArray({ min: 1 })
     .withMessage("At least one manager is required if provided")
+    .bail()
     .custom((arr) => arr.every(isValidObjectId))
     .withMessage("Invalid manager IDs"),
 
@@ -41,6 +48,7 @@ export const updateTeamValidator = [
     .optional()
     .isArray()
     .withMessage("Employees must be an array")
+    .bail()
     .custom((arr) => arr.every(isValidObjectId))
     .withMessage("Invalid employee IDs"),
 ];

@@ -8,13 +8,14 @@ const idValidator = param("id")
   .withMessage("Invalid task ID");
 
 export const createTaskValidator = [
-  body("title").notEmpty().withMessage("Title is required"),
+  body("title").notEmpty().withMessage("Title is required").bail(),
   body("description").optional(),
   body("priority")
     .notEmpty()
     .withMessage("Priority is required")
-    .isIn(["Low", "Medium", "High"])
-    .withMessage("Priority must be Low, Medium, or High"),
+    .bail()
+    .isIn(["low", "medium", "high"])
+    .withMessage("Priority must be low, medium, or high"),
   body("dueDate")
     .optional()
     .isISO8601()
@@ -32,29 +33,34 @@ export const createTaskValidator = [
 // Update Task
 export const updateTaskValidator = [
   idValidator,
-  body("title").optional(),
+  body("title").optional().notEmpty().withMessage("Title is Required").bail(),
   body("description").optional(),
   body("priority")
     .optional()
-    .isIn(["Low", "Medium", "High"])
-    .withMessage("Priority must be Low, Medium, or High"),
+    .isIn(["low", "medium", "high"])
+    .withMessage("Priority must be low, medium, or high"),
   body("status")
     .optional()
-    .isIn(["Pending", "In Progress", "Completed"])
-    .withMessage("Status must be Pending, In Progress, or Completed"),
+    .isIn(["todo", "in-progress", "done"])
+    .withMessage("Status must be todo, in-progress, or done"),
   body("dueDate")
     .optional()
     .isISO8601()
     .withMessage("Due date must be a valid date"),
 ];
 
-// Reassign Task
-export const reassignTaskValidator = [
+// assign Task
+export const assignTaskValidator = [
   idValidator,
-  body("newUserId")
+  body("userId")
     .notEmpty()
+    .bail()
     .custom(isValidObjectId)
-    .withMessage("New User ID must be valid"),
+    .withMessage("User ID must be valid"),
+  body("oldUserId")
+    .optional()
+    .custom(isValidObjectId)
+    .withMessage("Old User ID must be valid"),
 ];
 
 // Update Task Status
@@ -62,8 +68,9 @@ export const updateTaskStatusValidator = [
   idValidator,
   body("status")
     .notEmpty()
-    .isIn(["Pending", "In Progress", "Completed"])
-    .withMessage("Status must be Pending, In Progress, or Completed"),
+    .bail()
+    .isIn(["todo", "in-progress", "done"])
+    .withMessage("Status must be todo, in-progress, or done"),
 ];
 
 // Get Single Task

@@ -1,21 +1,59 @@
 import express from "express";
+
 import {
   createTeam,
   deleteTeam,
   getAllTeams,
   getSingleTeam,
-  getTeamMembers,
   updateTeam,
 } from "./../controllers/teamController.js";
+
 import { protectRoute } from "../middlewares/authMiddleware.js";
+
+import {
+  createTeamValidator,
+  deleteTeamValidator,
+  getSingleTeamValidator,
+  updateTeamValidator,
+} from "../validators/teamValidator.js";
+
+import { validateRequest } from "../middlewares/validatorMiddleware.js";
 
 const router = express.Router();
 
-router.post("/team", protectRoute('Admin'), createTeam);
-router.get("/teams", getAllTeams);
-router.delete("/team/:id", deleteTeam);
-router.put("/team/:id", updateTeam);
-router.get("/team/:id", getSingleTeam);
-router.get('/teamMembers',protectRoute('Manager'),getTeamMembers)
+router.post(
+  "/",
+  protectRoute("Admin"),
+  createTeamValidator,
+  validateRequest,
+  createTeam
+);
+
+router.get("/", protectRoute("Admin"), getAllTeams);
+
+router.delete(
+  "/:id",
+  protectRoute("Admin"),
+  deleteTeamValidator,
+  validateRequest,
+  deleteTeam
+);
+
+router.put(
+  "/:id",
+  protectRoute("Admin"),
+  updateTeamValidator,
+  validateRequest,
+  updateTeam
+);
+
+router.get(
+  "/:id",
+  protectRoute("Admin"),
+  getSingleTeamValidator,
+  validateRequest,
+  getSingleTeam
+);
+
 
 export default router;
