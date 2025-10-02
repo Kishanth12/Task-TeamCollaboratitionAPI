@@ -5,6 +5,7 @@ import {
   deleteTeam,
   getAllTeams,
   getSingleTeam,
+  getTeamMembers,
   updateTeam,
 } from "./../controllers/teamController.js";
 
@@ -31,6 +32,8 @@ router.post(
 
 router.get("/", protectRoute("Admin"), getAllTeams);
 
+router.get("/members", protectRoute("Manager"), getTeamMembers);
+
 router.delete(
   "/:id",
   protectRoute("Admin"),
@@ -54,6 +57,5 @@ router.get(
   validateRequest,
   getSingleTeam
 );
-
 
 export default router;

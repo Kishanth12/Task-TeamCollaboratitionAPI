@@ -154,4 +154,32 @@ export const updateTeam = async (req, res) => {
   }
 };
 
-
+//get logged Manager team members
+export const getTeamMembers = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const teams = await Team.find({ manager: userId });
+    if (!teams || teams.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No teams found for this manager" });
+    }
+    const members = await User.find({
+      teams: { $in: teams.map((team) => team._id) },
+      _id: { $ne: userId },
+    })
+      .select("-password")
+      .populate({
+        path: "teams",
+        select: "name",
+      })
+      .lean();
+    if (!members) {
+      return res.status(404).json({ message: "Members not found" });
+    }
+    res.status(200).json(members);
+  } catch (error) {
+    console.log("Error fetching team members:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

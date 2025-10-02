@@ -151,7 +151,7 @@ export const getSingleTask = async (req, res) => {
   }
 };
 
-//update task status
+//update task status Employees
 export const updateTaskStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -170,7 +170,7 @@ export const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
     try {
-      await createLog(userId, updateStatus._id, "Status updated");
+      await createLog(userId, updateStatus._id, "updated");
     } catch (error) {
       console.log("Failed to create log:", error);
     }

@@ -6,7 +6,7 @@ const logSchema = new mongoose.Schema(
     task: { type: mongoose.Schema.Types.ObjectId, ref: "Task", required: true },
     activity: {
       type: String,
-      enum: ["created", "updated", "commented", "reassigned"],
+      enum: ["created", "updated", "commented", "reassigned" ,"assigned"],
       required: true,
     },
   },
