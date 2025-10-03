@@ -73,7 +73,7 @@ export const assignTask = async (req, res) => {
     task.assignedTo = userId;
     await task.save();
 
-    const action = oldUserId ? "Task reassigned" : "Task assigned";
+    const action = oldUserId ? "reassigned" : "assigned";
 
     await createLog(user._id, task._id, action,{oldUserId});
 

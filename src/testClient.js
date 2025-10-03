@@ -1,9 +1,9 @@
 import { io as Client } from "socket.io-client";
 
-const socket = Client("http://localhost:5001",{
+const socket = Client("http://localhost:5001", {
   auth: {
-    userId:"68daba24edb13c18fd6888c3",
-  }
+    userId: "68daba24edb13c18fd6888c3",
+  },
 });
 
 socket.on("connect", () => {
